@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>LKPD 1 - Ikuti Jalan Tree untuk Memilah Sampah</title>
+<style>
+  :root{
+    --c-pemanasan:#F97316; --c-pemanasan-bg:#FFF3E8;
+    --c-misi1:#2563EB; --c-misi1-bg:#EAF1FF;
+    --c-misi2:#16A34A; --c-misi2-bg:#E9F9EF;
+    --c-misi3:#DC2626; --c-misi3-bg:#FDEAEA;
+    --c-refleksi:#FB923C; --c-refleksi-bg:#FFF1E3;
+    --c-ident:#475569; --c-ident-bg:#F1F5F9;
+    --c-text:#1E293B; --c-muted:#64748B; --c-border:#CBD5E1;
+    --c-ok:#16A34A; --c-danger:#DC2626;
+    --tree-blue:#2563EB; --tree-yellow:#FACC15; --tree-green:#16A34A;
+    --radius:16px; --shadow:0 2px 10px rgba(15,23,42,.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Verdana,Arial,sans-serif;background:#F8FAFC;color:var(--c-text);font-size:17px;line-height:1.55;}
+  h1,h2,h3{line-height:1.25;margin:0 0 8px;}
+  img,svg{max-width:100%;}
+  .wrap{max-width:820px;margin:0 auto;padding:12px 14px 60px;}
+  header.top{background:#0F172A;color:#fff;padding:20px 16px 16px;text-align:center;}
+  header.top h1{font-size:1.35rem;margin-bottom:4px;}
+  header.top p{margin:0;color:#CBD5E1;font-size:1rem;}
+  header.top .meta{font-size:.85rem;color:#94A3B8;margin-top:6px;}
+
+  /* ---- progress bar ---- */
+  .progress-bar{position:sticky;top:0;z-index:50;background:#0F172A;padding:10px 8px;overflow-x:auto;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .progress-bar::-webkit-scrollbar{height:4px;}
+  .progress-list{display:flex;gap:6px;list-style:none;margin:0;padding:0 6px;min-width:max-content;}
+  .progress-list li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.68rem;color:#94A3B8;width:78px;text-align:center;}
+  .p-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;background:#334155;color:#fff;border:2px solid #475569;}
+  .progress-list li.done .p-dot{background:var(--c-ok);border-color:var(--c-ok);}
+  .progress-list li.current .p-dot{background:#fff;color:#0F172A;border-color:#fff;}
+  .progress-list li.done, .progress-list li.current{color:#fff;}
+
+  /* ---- section cards ---- */
+  section.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);margin:16px 0;padding:18px 16px;border-top:6px solid var(--sect-color,#94A3B8);scroll-margin-top:70px;}
+  section.card.locked{padding:22px 16px;background:#F1F5F9;border-top-color:#CBD5E1;}
+  .lock-view{display:flex;align-items:center;gap:12px;color:var(--c-muted);}
+  .lock-view .ico{font-size:1.6rem;}
+  section.card:not(.locked) .lock-view{display:none;}
+  section.card.locked .section-body{display:none;}
+  .section-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .section-head .badge{width:30px;height:30px;border-radius:50%;background:var(--sect-color,#94A3B8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex:none;}
+  .section-head h2{font-size:1.15rem;color:var(--sect-color,#334155);}
+  .section-check{margin-left:auto;color:var(--c-ok);font-size:1.3rem;display:none;}
+  section.card.completed .section-check{display:inline;}
+
+  .info-box{background:var(--sect-bg,#F1F5F9);border-radius:12px;padding:12px 14px;margin:10px 0;font-size:.96rem;}
+  .info-box.pink{background:#FCE7F3;border:1px solid #F9A8D4;}
+
+  fieldset{border:none;padding:0;margin:0 0 16px;}
+  legend{font-weight:600;margin-bottom:8px;padding:0;}
+  label.opt{display:flex;align-items:center;gap:8px;padding:9px 10px;border:2px solid var(--c-border);border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:1rem;background:#fff;}
+  label.opt:has(input:checked){border-color:var(--sect-color,#2563EB);background:var(--sect-bg,#EFF6FF);font-weight:600;}
+  label.opt input{width:20px;height:20px;flex:none;}
+  label.opt.disabled, label.opt input:disabled{opacity:.55;cursor:not-allowed;}
+  .field{margin-bottom:16px;}
+  .field-label{display:block;font-weight:600;margin-bottom:6px;}
+  .row-inline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px;}
+  input[type=text], textarea{width:100%;font-size:1rem;padding:10px 12px;border:2px solid var(--c-border);border-radius:10px;font-family:inherit;color:var(--c-text);background:#fff;}
+  input[type=text]:focus, textarea:focus{outline:3px solid var(--sect-color,#2563EB);outline-offset:1px;border-color:var(--sect-color,#2563EB);}
+  textarea{min-height:64px;resize:vertical;}
+  input:disabled, textarea:disabled{background:#F1F5F9;color:#64748B;}
+
+  .field.field-invalid{outline:3px solid var(--c-danger);outline-offset:3px;border-radius:12px;}
+  .field.field-invalid .field-label{color:var(--c-danger);}
+  .err-msg{display:none;color:var(--c-danger);font-size:.85rem;margin-top:4px;font-weight:600;}
+  .field.field-invalid .err-msg{display:block;}
+
+  table.static-tbl{width:100%;border-collapse:collapse;margin:10px 0;font-size:.92rem;}
+  table.static-tbl th, table.static-tbl td{border:1px solid var(--c-border);padding:8px;text-align:left;vertical-align:top;}
+  table.static-tbl th{background:#F1F5F9;}
+  .tbl-wrap{overflow-x:auto;}
+  table.ans-tbl{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px;}
+  table.ans-tbl th, table.ans-tbl td{border:1px solid var(--c-border);padding:6px;vertical-align:top;}
+  table.ans-tbl th{background:#F1F5F9;}
+  .radio-mini{display:flex;flex-direction:column;gap:4px;}
+  .radio-mini label{display:flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;}
+
+  details.tatacara{background:#F8FAFC;border:1px solid var(--c-border);border-radius:12px;padding:10px 14px;margin:10px 0 16px;}
+  details.tatacara summary{cursor:pointer;font-weight:700;color:var(--sect-color,#334155);}
+  details.tatacara ol{margin:8px 0 0 18px;padding:0;}
+  details.tatacara li{margin-bottom:4px;}
+  .video-box{margin:12px 0;}
+  .video-frame{position:relative;width:100%;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#0F172A;}
+  .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .video-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#CBD5E1;text-align:center;padding:16px;font-size:.95rem;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 20px;border-radius:12px;border:none;font-size:1.02rem;font-weight:700;cursor:pointer;min-height:48px;width:100%;}
+  .btn-main{background:var(--sect-color,#2563EB);color:#fff;}
+  .btn-main:active{filter:brightness(.92);}
+  .btn-ghost{background:#fff;border:2px solid var(--c-border);color:var(--c-text);}
+  .btn-small{width:auto;padding:8px 14px;font-size:.85rem;min-height:36px;}
+  .friendly-msg{display:none;background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;border-radius:10px;padding:10px 12px;margin-top:10px;font-weight:600;}
+  .friendly-msg.show{display:block;}
+
+  footer.util{max-width:820px;margin:0 auto;padding:8px 14px 40px;text-align:center;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
+  .reset-btn{background:none;border:1px solid var(--c-border);color:var(--c-muted);border-radius:10px;padding:8px 14px;font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;user-select:none;}
+  .reset-btn:hover{background:#F1F5F9;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;margin-top:8px;color:var(--c-muted);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+
+  /* ---- STYLE KHUSUS EKSPOR PDF ---- */
+  #print-area{display:none;}
+  .pdf-export-root{font-family:inherit;width:100% !important;box-sizing:border-box !important;}
+  .pdf-export-root .card{page-break-inside:avoid;break-inside:avoid;margin:12px 0 !important;padding:14px 12px !important;border-radius:8px !important;}
+  .pdf-export-root .pdf-answer{font-family:inherit;}
+  .pdf-export-root .pdf-choice-mark{vertical-align:middle;margin-right:3px;}
+  .pdf-export-root .tbl-wrap{overflow:visible !important;width:100% !important;}
+  .pdf-export-root table.ans-tbl, .pdf-export-root table.static-tbl{width:100% !important;min-width:0 !important;table-layout:fixed !important;}
+  .pdf-export-root table.ans-tbl th, .pdf-export-root table.ans-tbl td,
+  .pdf-export-root table.static-tbl th, .pdf-export-root table.static-tbl td{word-wrap:break-word;overflow-wrap:break-word;padding:5px !important;}
+  .pdf-export-root label.opt{display:inline-flex !important;align-items:center !important;gap:5px !important;padding:4px 8px !important;margin-bottom:4px !important;font-size:.9rem !important;border-width:1px !important;}
+  .pdf-export-root img, .pdf-export-root svg{max-width:100% !important;height:auto !important;}
+  .pdf-export-root section.card.locked .section-body{display:block !important;}
+  .pdf-export-root section.card.locked{padding:14px 12px !important;background:inherit;border-top-color:var(--sect-color,#94A3B8);}
+  .pdf-export-root .lock-view{display:none !important;}
+  .pdf-export-root .card{page-break-inside:auto !important;break-inside:auto !important;}
+  .pdf-export-root .section-body{display:block !important;}
+  .pdf-export-root .friendly-msg{display:none !important;}
+
+  @media print{
+    body.printing *{visibility:hidden;}
+    body.printing #print-area, body.printing #print-area *{visibility:visible;}
+    body.printing #print-area{display:block;position:absolute;left:0;top:0;width:100%;}
+    .print-block{page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>LEMBAR KERJA PESERTA DIDIK</h1>
+  <p>Ikuti Jalan Tree untuk Memilah Sampah</p>
+  <p class="meta">Materi: Struktur Data Tree &middot; Konteks: Pengelompokan Sampah &middot; LKPD A</p>
+</header>
+
+<nav class="progress-bar" aria-label="Peta kemajuan LKPD">
+  <ul class="progress-list" id="progressList"></ul>
+</nav>
+
+<main class="wrap">
+
+  <!-- ================= IDENTITAS ================= -->
+  <section class="card" id="sec-identitas" style="--sect-color:var(--c-ident);--sect-bg:var(--c-ident-bg)">
+    <div class="section-head"><span class="badge">1</span><h2>Identitas</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <div class="field" data-type="text">
+        <label class="field-label" for="ident_nama1">Nama Anggota 1</label>
+        <input type="text" id="ident_nama1" autocomplete="off">
+        <p class="err-msg">Isi nama Anggota 1 dulu ya.</p>
+      </div>
+      <div class="field" data-type="text">
+        <label class="field-label" for="ident_nama2">Nama Anggota 2</label>
+        <input type="text" id="ident_nama2" autocomplete="off">
+        <p class="err-msg">Isi nama Anggota 2 dulu ya.</p>
+      </div>
+      <div class="field" data-type="text">
+        <label class="field-label" for="ident_kelas">Kelas</label>
+        <input type="text" id="ident_kelas" autocomplete="off">
+        <p class="err-msg">Isi kelas dulu ya.</p>
+      </div>
+      <div class="info-box">
+        <strong>Apa yang akan kamu pelajari?</strong>
+        <p>Hari ini kamu akan:</p>
+        <ol style="margin:6px 0 0 18px;padding:0;">
+          <li>Mereview kembali bagian Tree: root, parent, child, leaf.</li>
+          <li>Mempelajari kondisi percabangan pada Tree.</li>
+        </ol>
+      </div>
+      <button class="btn btn-main" data-done="0">Mulai Pemanasan</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= PEMANASAN ================= -->
+  <section class="card" id="sec-pemanasan" style="--sect-color:var(--c-pemanasan);--sect-bg:var(--c-pemanasan-bg)">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Identitas dulu</span></div>
+    <div class="section-head"><span class="badge">2</span><h2>Pemanasan: Ayo Tebak!</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <p>Menurutmu, sampah ini masuk jenis apa? Jawab sesuai pengetahuan kalian ya, nanti kita cek pada Misi 2!</p>
+      <div class="field" data-type="radio" data-name="pemanasan_pisang">
+        <span class="field-label">Kulit pisang</span>
+        <div class="row-inline">
+          <label class="opt"><input type="radio" name="pemanasan_pisang" value="Organik"> Organik</label>
+          <label class="opt"><input type="radio" name="pemanasan_pisang" value="Anorganik"> Anorganik</label>
+          <label class="opt"><input type="radio" name="pemanasan_pisang" value="B3"> B3</label>
+          <label class="opt"><input type="radio" name="pemanasan_pisang" value="Residu"> Residu</label>
+        </div>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="pemanasan_baterai">
+        <span class="field-label">Baterai</span>
+        <div class="row-inline">
+          <label class="opt"><input type="radio" name="pemanasan_baterai" value="Organik"> Organik</label>
+          <label class="opt"><input type="radio" name="pemanasan_baterai" value="Anorganik"> Anorganik</label>
+          <label class="opt"><input type="radio" name="pemanasan_baterai" value="B3"> B3</label>
+          <label class="opt"><input type="radio" name="pemanasan_baterai" value="Residu"> Residu</label>
+        </div>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="pemanasan_botol">
+        <span class="field-label">Botol plastik</span>
+        <div class="row-inline">
+          <label class="opt"><input type="radio" name="pemanasan_botol" value="Organik"> Organik</label>
+          <label class="opt"><input type="radio" name="pemanasan_botol" value="Anorganik"> Anorganik</label>
+          <label class="opt"><input type="radio" name="pemanasan_botol" value="B3"> B3</label>
+          <label class="opt"><input type="radio" name="pemanasan_botol" value="Residu"> Residu</label>
+        </div>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <button class="btn btn-main" data-done="1">Selesai Pemanasan, lanjut ke Misi 1</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= MISI 1 ================= -->
+  <section class="card" id="sec-misi1" style="--sect-color:var(--c-misi1);--sect-bg:var(--c-misi1-bg)">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Pemanasan dulu</span></div>
+    <div class="section-head"><span class="badge">3</span><h2>Misi 1: Kenali dan Baca Tree</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <div class="video-box" data-video="misi1" data-video-title="Video tata cara pengerjaan Misi 1"></div>
+      <details class="tatacara" open>
+        <summary>Tata cara pengerjaan</summary>
+        <ol>
+          <li>Lihat dan cermati gambar Tree di bawah ini. Ingat: biru = titik awal, kuning = pertanyaan, hijau = hasil akhir.</li>
+          <li>Baca tabel bagian Tree bersama temanmu.</li>
+          <li>Jawab tiga soal pada bagian "Ayo jawab" dengan mencentang pilihan yang ada.</li>
+          <li>Baca Kartu "Aturan dan Petunjuk", lalu jawab bagian "Cek pemahaman".</li>
+          <li>Setelah semua terisi, klik tombol "Selesai Misi 1".</li>
+        </ol>
+      </details>
+      <div class="info-box">Tree itu seperti pohon keluarga. Parent = orang tua, child = anak. Bedanya, Tree ini terbalik: titik awalnya (root) ada di atas.</div>
+
+      <div class="tree-holder" data-tree></div>
+        <br>
+      <h3 style="color: rgb(2, 2, 137);">A. Mereview Kembali Bagian-Bagian Tree</h3>
+      <div class="tbl-wrap">
+      <table class="static-tbl">
+        <tr><th>Istilah</th><th>Penjelasan</th><th>Contoh dari gambar Tree di atas</th></tr>
+        <tr><td>Root</td><td>Titik awal Tree (kotak biru)</td><td>SAMPAH</td></tr>
+        <tr><td>Parent</td><td>Bagian yang punya cabang ke bawah (kotak kuning)</td><td>Apakah mudah terurai?</td></tr>
+        <tr><td>Child</td><td>Bagian yang ada tepat di bawah parent</td><td>"Apakah berbahaya?" adalah child dari "Apakah mudah terurai?"</td></tr>
+        <tr><td>Leaf</td><td>Bagian akhir yang tidak punya cabang lagi (kotak hijau)</td><td>ORGANIK</td></tr>
+      </table>
+      </div>
+
+      <div class="info-box">Setelah memahami kembali struktur Tree, mari menjawab pertanyaan di bawah ini!</div>
+      <h3>Ayo jawab</h3>
+      <div class="field" data-type="radio" data-name="misi1_a">
+        <span class="field-label">a. Parent dari B3 adalah:</span>
+        <label class="opt"><input type="radio" name="misi1_a" value="Apakah mudah terurai?"> Apakah mudah terurai?</label>
+        <label class="opt"><input type="radio" name="misi1_a" value="Apakah berbahaya?"> Apakah berbahaya?</label>
+        <label class="opt"><input type="radio" name="misi1_a" value="Dapat didaur ulang?"> Dapat didaur ulang?</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="checkbox" data-name="misi1_b" data-count="2">
+        <span class="field-label">b. Child dari "Apakah berbahaya?" ada dua. Centang dua yang benar:</span>
+        <label class="opt"><input type="checkbox" name="misi1_b" value="ORGANIK"> ORGANIK</label>
+        <label class="opt"><input type="checkbox" name="misi1_b" value="B3"> B3</label>
+        <label class="opt"><input type="checkbox" name="misi1_b" value="Dapat didaur ulang?"> Dapat didaur ulang?</label>
+        <label class="opt"><input type="checkbox" name="misi1_b" value="SAMPAH"> SAMPAH</label>
+        <p class="err-msg">Centang tepat 2 pilihan ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi1_c">
+        <span class="field-label">c. Ada berapa leaf pada Tree ini?</span>
+        <label class="opt"><input type="radio" name="misi1_c" value="2"> 2</label>
+        <label class="opt"><input type="radio" name="misi1_c" value="4"> 4</label>
+        <label class="opt"><input type="radio" name="misi1_c" value="6"> 6</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <h3 style="color: rgb(2, 2, 137);">B. Kartu Aturan Tree</h3>
+      <p>Dari gambar Tree di atas tadi, terdapat 3 pertanyaan. Jawaban YA atau TIDAK menentukan cabang yang selanjutnya. Mari pahami kembali melalui tabel ini!</p>
+      <div class="tbl-wrap">
+      <table class="static-tbl">
+        <tr><th>Pertanyaan</th><th>Jika YA</th><th>Jika TIDAK</th></tr>
+        <tr><td>1. Apakah mudah terurai?</td><td>maka sampah termasuk jenis <b>ORGANIK</b> lalu proses (selesai)</td><td>lanjut ke pertanyaan 2</td></tr>
+        <tr><td>2. Apakah berbahaya?</td><td>maka sampah termasuk jenis <b>B3</b> lalu proses (selesai)</td><td>lanjut ke pertanyaan 3</td></tr>
+        <tr><td>3. Dapat didaur ulang?</td><td>maka sampah termasuk jenis <b>ANORGANIK</b> lalu proses (selesai)</td><td>maka sampah termasuk <b>RESIDU</b>lalu proses (selesai)</td></tr>
+      </table>
+      </div>
+      <div class="info-box">
+        <p><em>Proses pengecekan menggunakan tree <b style="color: rgb(137, 2, 2);">berhenti</b> kalau kamu sudah bertemu <b style="color: rgb(0, 166, 0);">kotak hijau (hasil akhir)</b>.</em></p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi1_cek">
+        <span class="field-label">Cek pemahaman: Jika jawaban "Apakah mudah terurai?" adalah TIDAK, kita menuju:</span>
+        <label class="opt"><input type="radio" name="misi1_cek" value="ORGANIK"> ORGANIK</label>
+        <label class="opt"><input type="radio" name="misi1_cek" value="langsung selesai"> langsung selesai</label>
+        <label class="opt"><input type="radio" name="misi1_cek" value='pertanyaan "Apakah berbahaya?"'> pertanyaan "Apakah berbahaya?"</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <button class="btn btn-main" data-done="2">Selesai Misi 1, lanjut ke Misi 2</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= MISI 2 ================= -->
+  <section class="card" id="sec-misi2" style="--sect-color:var(--c-misi2);--sect-bg:var(--c-misi2-bg)">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Misi 1 dulu</span></div>
+    <div class="section-head"><span class="badge">4</span><h2>Misi 2: Ikuti Jalan Tree</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <div class="video-box" data-video="misi2" data-video-title="Video tata cara pengerjaan Misi 2"></div>
+      <details class="tatacara" open>
+        <summary>Tata cara pengerjaan</summary>
+        <ol>
+          <li>Lihat Contoh "kulit pisang". Ikuti jalurnya dengan melihat gambar Tree.</li>
+          <li>Kerjakan Latihan A (baterai) dengan bantuan gambar Tree.</li>
+          <li>Kerjakan Latihan B (botol plastik) sendiri, berhenti saat bertemu hasil akhir.</li>
+          <li>Isi Cek tebakan: bandingkan tebakan awalmu di Pemanasan dengan hasil Tree.</li>
+          <li>Kerjakan Latihan C memakai Kartu Aturan Ringkas (tanpa gambar Tree).</li>
+          <li>Setelah semua terisi, klik "Selesai Misi 2".</li>
+        </ol>
+      </details>
+      <p>Cara: taruh jarimu di SAMPAH, jawab pertanyaan, lalu ikuti panah YA atau TIDAK sampai berhenti di kotak hijau.</p>
+      <div class="tree-holder" data-tree></div>
+
+      <div class="info-box">
+        <strong>Contoh: Kulit pisang</strong>
+        <p>Apakah kulit pisang mudah terurai? Ya, kulit pisang bisa membusuk. Jadi kita ikuti cabang YA.</p>
+        <p><strong>Jalur:</strong> SAMPAH - Apakah mudah terurai? (YA) - ORGANIK</p>
+      </div>
+
+      <h3 style="color: rgb(4, 107, 33);">Latihan A: Baterai</h3>
+      <div class="field" data-type="radio" data-name="misi2_a_l1">
+        <span class="field-label">Langkah 1: "Apakah mudah terurai?"</span>
+        <label class="opt"><input type="radio" name="misi2_a_l1" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi2_a_l1" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="text">
+        <label class="field-label" for="misi2_a_l2_q">Langkah 2: Tulis pertanyaan berikutnya yang ada pada gambar Tree</label>
+        <input type="text" id="misi2_a_l2_q" autocomplete="off">
+        <p class="err-msg">Isi pertanyaannya dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi2_a_l2_a">
+        <span class="field-label">Jawaban langkah 2</span>
+        <label class="opt"><input type="radio" name="misi2_a_l2_a" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi2_a_l2_a" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi2_a_hasil">
+        <span class="field-label">Hasil akhir</span>
+        <div class="row-inline">
+          <label class="opt"><input type="radio" name="misi2_a_hasil" value="ORGANIK"> ORGANIK</label>
+          <label class="opt"><input type="radio" name="misi2_a_hasil" value="B3"> B3</label>
+          <label class="opt"><input type="radio" name="misi2_a_hasil" value="ANORGANIK"> ANORGANIK</label>
+          <label class="opt"><input type="radio" name="misi2_a_hasil" value="RESIDU"> RESIDU</label>
+        </div>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <h3 style="color: rgb(4, 107, 33);">Latihan B: Botol plastik</h3>
+      <p>Tidak semua kotak harus dipakai. Berhenti jika sudah bertemu kotak hijau.</p>
+
+      <div class="field" data-type="text">
+        <label class="field-label" for="misi2_b_1_q">Langkah 1 - Tulis pertanyaan pertama yang ada pada gambar Tree</label>
+        <input type="text" id="misi2_b_1_q" autocomplete="off">
+        <p class="err-msg">Isi pertanyaannya dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi2_b_1_a">
+        <span class="field-label">Jawaban Langkah 1</span>
+        <label class="opt"><input type="radio" name="misi2_b_1_a" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi2_b_1_a" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <label class="opt" style="font-weight:600;"><input type="checkbox" id="misi2_b_2_selesai"> Sudah selesai di langkah sebelumnya (boleh kosongkan Langkah 2)</label>
+      <div class="field" data-type="text" data-skip-if="misi2_b_2_selesai">
+        <label class="field-label" for="misi2_b_2_q">Langkah 2 - Tulis pertanyaan berikutnya jika proses analisis kamu rasa belum selesai</label>
+        <input type="text" id="misi2_b_2_q" autocomplete="off">
+        <p class="err-msg">Isi pertanyaannya, atau centang "sudah selesai" di atas.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi2_b_2_a" data-skip-if="misi2_b_2_selesai">
+        <span class="field-label">Langkah 2 - Jawaban</span>
+        <label class="opt"><input type="radio" name="misi2_b_2_a" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi2_b_2_a" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu, atau centang "sudah selesai" di atas.</p>
+      </div>
+
+      <label class="opt" style="font-weight:600;"><input type="checkbox" id="misi2_b_3_selesai"> Sudah selesai di langkah sebelumnya (boleh kosongkan Langkah 3)</label>
+      <div class="field" data-type="text" data-skip-if="misi2_b_3_selesai">
+        <label class="field-label" for="misi2_b_3_q">Langkah 3 - Tulis pertanyaan berikutnya jika proses analisis kamu rasa belum selesai</label>
+        <input type="text" id="misi2_b_3_q" autocomplete="off">
+        <p class="err-msg">Isi pertanyaannya, atau centang "sudah selesai" di atas.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi2_b_3_a" data-skip-if="misi2_b_3_selesai">
+        <span class="field-label">Langkah 3 - Jawaban</span>
+        <label class="opt"><input type="radio" name="misi2_b_3_a" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi2_b_3_a" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu, atau centang "sudah selesai" di atas.</p>
+      </div>
+
+      <div class="field" data-type="radio" data-name="misi2_b_hasil">
+        <span class="field-label">Hasil akhir Latihan B</span>
+        <div class="row-inline">
+          <label class="opt"><input type="radio" name="misi2_b_hasil" value="ORGANIK"> ORGANIK</label>
+          <label class="opt"><input type="radio" name="misi2_b_hasil" value="B3"> B3</label>
+          <label class="opt"><input type="radio" name="misi2_b_hasil" value="ANORGANIK"> ANORGANIK</label>
+          <label class="opt"><input type="radio" name="misi2_b_hasil" value="RESIDU"> RESIDU</label>
+        </div>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <h3 style="color: rgb(4, 107, 33);">Cek tebakan awalmu </h3>
+      <div class="info-box">
+        <p>Tulis hasil analisis menggunakan tree pada kolom "Hasil dari Tree" lalu bandingkan dengan jawabanmu saat pemanasan di kolom "Tebakanku</p>
+      </div>
+      <div class="tbl-wrap">
+      <table class="ans-tbl">
+        <tr><th>Sampah</th><th>Jawaban Jenis Sampah</th><th>Tebakanku</th></tr>
+        <tr>
+          <td>Kulit pisang</td>
+          <td class="field" data-type="text"><input type="text" id="misi2_cek_pisang_hasil" style="min-width:110px;"><p class="err-msg">Isi dulu ya.</p></td>
+          <td class="field" data-type="radio" data-name="misi2_cek_pisang_tebakan">
+            <div class="radio-mini"><label><input type="radio" name="misi2_cek_pisang_tebakan" value="Sama"> Sama</label><label><input type="radio" name="misi2_cek_pisang_tebakan" value="Beda"> Beda</label></div>
+            <p class="err-msg">Pilih dulu ya.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>Baterai</td>
+          <td class="field" data-type="text"><input type="text" id="misi2_cek_baterai_hasil" style="min-width:110px;"><p class="err-msg">Isi dulu ya.</p></td>
+          <td class="field" data-type="radio" data-name="misi2_cek_baterai_tebakan">
+            <div class="radio-mini"><label><input type="radio" name="misi2_cek_baterai_tebakan" value="Sama"> Sama</label><label><input type="radio" name="misi2_cek_baterai_tebakan" value="Beda"> Beda</label></div>
+            <p class="err-msg">Pilih dulu ya.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>Botol plastik</td>
+          <td class="field" data-type="text"><input type="text" id="misi2_cek_botol_hasil" style="min-width:110px;"><p class="err-msg">Isi dulu ya.</p></td>
+          <td class="field" data-type="radio" data-name="misi2_cek_botol_tebakan">
+            <div class="radio-mini"><label><input type="radio" name="misi2_cek_botol_tebakan" value="Sama"> Sama</label><label><input type="radio" name="misi2_cek_botol_tebakan" value="Beda"> Beda</label></div>
+            <p class="err-msg">Pilih dulu ya.</p>
+          </td>
+        </tr>
+      </table>
+      </div>
+      <p><em><b>Tree membantu kita memastikan jenis sampah dengan langkah yang jelas, bukan hanya menebak.</b></em></p>
+
+      </div>
+
+      <button class="btn btn-main" data-done="3">Selesai Misi 2, lanjut ke Misi 3</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= MISI 3 ================= -->
+  <section class="card" id="sec-misi3" style="--sect-color:var(--c-misi3);--sect-bg:var(--c-misi3-bg)">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Misi 2 dulu</span></div>
+    <div class="section-head"><span class="badge">5</span><h2>Misi 3: Detektif Salah Jalan</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <div class="video-box" data-video="misi3" data-video-title="Video tata cara pengerjaan Misi 3"></div>
+      <details class="tatacara" open>
+        <summary>Tata cara pengerjaan</summary>
+        <ol>
+          <li>Baca jalur milik temanmu di tiap kasus dengan teliti.</li>
+          <li>Cari langkah yang salah.</li>
+          <li>Tulis jalur yang benar memakai tanda strip (-) di antara langkah-langkahnya.</li>
+          <li>Lengkapi kalimat kesimpulan dengan kata-katamu sendiri.</li>
+          <li>Setelah semua terisi, klik "Selesai Misi 3".</li>
+        </ol>
+      </details>
+      <p>Dua temanmu salah mengikuti Tree. Jadilah detektif! Temukan salahnya lalu perbaiki.</p>
+
+      <div class="info-box pink">
+        <strong>Kasus 1: Rani membuang sisa nasi.</strong>
+        <p>Langkah 1: Apakah mudah terurai? &rarr; TIDAK<br>
+           Langkah 2: Apakah berbahaya? &rarr; TIDAK<br>
+           Langkah 3: Dapat didaur ulang? &rarr; TIDAK<br>
+           Hasil teman: RESIDU</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi3_k1_langkah">
+        <span class="field-label">Kesalahan pertama ada di langkah nomor:</span>
+        <label class="opt"><input type="radio" name="misi3_k1_langkah" value="1"> 1</label>
+        <label class="opt"><input type="radio" name="misi3_k1_langkah" value="2"> 2</label>
+        <label class="opt"><input type="radio" name="misi3_k1_langkah" value="3"> 3</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="text">
+        <label class="field-label" for="misi3_k1_jalur">Jalur yang benar:</label>
+        <textarea id="misi3_k1_jalur" rows="2" placeholder="Tulis jalurnya memakai tanda strip (-) untuk menuju langkah berikutnya. Contoh: SAMPAH - Apakah mudah terurai? (YA) - ORGANIK"></textarea>
+        <p style="font-size:.82rem;color:var(--c-muted);margin-top:4px;">Tulis jalurnya memakai tanda strip (-) untuk menuju langkah berikutnya. Contoh: SAMPAH - Apakah mudah terurai? (TIDAK) - Apakah berbahaya? (YA) dan seterusnya</p>
+        <p class="err-msg">Tulis jalur yang benar dulu ya.</p>
+      </div>
+
+      <div class="info-box pink">
+        <strong>Kasus 2: Sinta membuang botol kaca.</strong>
+        <p>Langkah 1: Apakah mudah terurai? &rarr; TIDAK<br>
+           Langkah 2: Dapat didaur ulang? &rarr; YA<br>
+           Hasil teman: ANORGANIK</p>
+      </div>
+      <div class="field" data-type="text">
+        <span class="field-label">Sinta melewatkan satu pertanyaan. Tulis pertanyaan itu:</span>
+        <div class="row-inline"><span>Apakah</span><input type="text" id="misi3_k2_pertanyaan" style="flex:1;min-width:140px;"><span>?</span></div>
+        <p class="err-msg">Isi pertanyaannya dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="misi3_k2_jawaban">
+        <span class="field-label">Jawabannya untuk botol kaca:</span>
+        <label class="opt"><input type="radio" name="misi3_k2_jawaban" value="YA"> YA</label>
+        <label class="opt"><input type="radio" name="misi3_k2_jawaban" value="TIDAK"> TIDAK</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+
+      <div class="field" data-type="text">
+        <label class="field-label" for="misi3_simpulan">Ayo simpulkan bersama: "Tree membantu kita memilah sampah karena ..."</label>
+        <textarea id="misi3_simpulan" rows="2"></textarea>
+        <p class="err-msg">Tulis kesimpulanmu dulu ya.</p>
+      </div>
+
+      <button class="btn btn-main" data-done="4">Selesai Misi 3, lanjut ke Refleksi</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= REFLEKSI ================= -->
+  <section class="card" id="sec-refleksi" style="--sect-color:var(--c-refleksi);--sect-bg:var(--c-refleksi-bg)">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Misi 3 dulu</span></div>
+    <div class="section-head"><span class="badge">6</span><h2>Refleksi: Bagaimana Perasaanmu?</h2><span class="section-check">&#10003;</span></div>
+    <div class="section-body">
+      <p>Beri tanda sesuai pemahamanmu.</p>
+      <div class="field" data-type="radio" data-name="refleksi_p1">
+        <span class="field-label">1. Saya dapat menemukan root, parent, child, dan leaf pada Tree.</span>
+        <label class="opt"><input type="radio" name="refleksi_p1" value="Sudah paham"> Sudah paham</label>
+        <label class="opt"><input type="radio" name="refleksi_p1" value="Masih bingung"> Masih bingung</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="refleksi_p2">
+        <span class="field-label">2. Saya dapat mengikuti jalur YA/TIDAK sampai hasil akhir.</span>
+        <label class="opt"><input type="radio" name="refleksi_p2" value="Sudah paham"> Sudah paham</label>
+        <label class="opt"><input type="radio" name="refleksi_p2" value="Masih bingung"> Masih bingung</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="radio" data-name="refleksi_p3">
+        <span class="field-label">3. Saya dapat menentukan jenis sampah menggunakan Tree.</span>
+        <label class="opt"><input type="radio" name="refleksi_p3" value="Sudah paham"> Sudah paham</label>
+        <label class="opt"><input type="radio" name="refleksi_p3" value="Masih bingung"> Masih bingung</label>
+        <p class="err-msg">Pilih salah satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="checkbox" data-name="refleksi_sulit" data-min="1">
+        <span class="field-label">Bagian yang masih sulit bagiku: (boleh lebih dari satu)</span>
+        <label class="opt"><input type="checkbox" name="refleksi_sulit" value="Mengenal bagian Tree"> Mengenal bagian Tree</label>
+        <label class="opt"><input type="checkbox" name="refleksi_sulit" value="Menjawab YA/TIDAK"> Menjawab YA/TIDAK</label>
+        <label class="opt"><input type="checkbox" name="refleksi_sulit" value="Mengikuti jalur"> Mengikuti jalur</label>
+        <label class="opt"><input type="checkbox" name="refleksi_sulit" value="Tidak ada!"> Tidak ada!</label>
+        <p class="err-msg">Pilih minimal satu dulu ya.</p>
+      </div>
+      <div class="field" data-type="text">
+        <label class="field-label" for="refleksi-guru1">Bagaimana perasaanmu saat mengikuti pembelajaran bersama Bu Fikriya? </label>
+        <textarea id="refleksi-guru1" rows="2" placeholder="Contoh: merasa nyaman, tidak takut bertanya, sulit, ingin kabur"></textarea>
+        <p class="err-msg">Jawab pertanyaan ini dulu ya.</p>
+      </div>
+       <div class="field" data-type="text">
+        <label class="field-label" for="refleksi-guru2">Apa hal yang perlu diperbaiki dari Bu Fikriya?</label>
+        <textarea id="refleksi-guru2" rows="2" placeholder="Contoh: sesekali kita bisa belajar menggunakan kuis game interaktif, penjelasan diperlambat"></textarea>
+        <p class="err-msg">Jawab pertanyaan ini dulu ya.</p>
+      </div>
+      <button class="btn btn-main" data-done="5">Selesai Refleksi</button>
+      <p class="friendly-msg">Masih ada yang belum diisi, ayo lengkapi dulu ya!</p>
+    </div>
+  </section>
+
+  <!-- ================= SUBMIT ================= -->
+  <section class="card" id="sec-submit" style="--sect-color:#0F172A;--sect-bg:#F1F5F9">
+    <div class="lock-view"><span class="ico">&#128274;</span><span>Selesaikan Refleksi dulu</span></div>
+    <div class="section-head"><span class="badge">7</span><h2>Kirim LKPD</h2></div>
+    <div class="section-body">
+      <p id="submitHelp">Pastikan semua bagian sudah lengkap sebelum mengirim.</p>
+      <ul id="submitTodo" style="color:var(--c-danger);"></ul>
+      <button class="btn btn-main" id="btnSubmit" style="background:#0F172A;">Kirim LKPD</button>
+      <div id="submitSuccess" style="display:none;text-align:center;margin-top:14px;">
+        <p style="color:var(--c-ok);font-weight:700;font-size:1.1rem;">LKPD berhasil dikirim! Kerja bagus! &#127881;</p>
+        <button class="btn btn-ghost" id="btnDownloadPdf">Unduh PDF</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="util">
+  <button class="reset-btn" id="btnReset">Mulai ulang</button>
+  <button class="reset-btn" id="btnExport" style="background:#2563EB;color:#fff;border-color:#2563EB;">&#128190; Simpan Progres (File)</button>
+  <label class="reset-btn" for="inputImport" style="cursor:pointer;">&#128194; Muat Progres (File)</label>
+  <input type="file" id="inputImport" accept=".json" style="display:none;">
+</footer>
+
+<!-- Area khusus cetak / ekspor PDF (terisolasi) -->
+<div id="print-area"></div>
+
+<template id="tree-svg-template">
+<svg viewBox="0 0 1000 640" role="img" aria-label="Diagram Tree pemilahan sampah.">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker>
+  </defs>
+  <g stroke="#334155" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <line x1="500" y1="70" x2="500" y2="108"/>
+    <line x1="420" y1="168" x2="150" y2="218"/>
+    <line x1="600" y1="168" x2="640" y2="218"/>
+    <line x1="600" y1="278" x2="510" y2="328"/>
+    <line x1="740" y1="278" x2="790" y2="328"/>
+    <line x1="770" y1="388" x2="670" y2="438"/>
+    <line x1="870" y1="388" x2="890" y2="438"/>
+  </g>
+  <g font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="17">
+    <rect x="215" y="182" width="60" height="24" rx="6" fill="#DCFCE7"/><text x="245" y="199" text-anchor="middle" fill="#15803D">YA</text>
+    <rect x="605" y="182" width="80" height="24" rx="6" fill="#FEE2E2"/><text x="645" y="199" text-anchor="middle" fill="#B91C1C">TIDAK</text>
+    <rect x="595" y="292" width="60" height="24" rx="6" fill="#DCFCE7"/><text x="625" y="309" text-anchor="middle" fill="#15803D">YA</text>
+    <rect x="750" y="292" width="80" height="24" rx="6" fill="#FEE2E2"/><text x="790" y="309" text-anchor="middle" fill="#B91C1C">TIDAK</text>
+    <rect x="695" y="402" width="60" height="24" rx="6" fill="#DCFCE7"/><text x="725" y="419" text-anchor="middle" fill="#15803D">YA</text>
+    <rect x="850" y="402" width="80" height="24" rx="6" fill="#FEE2E2"/><text x="890" y="419" text-anchor="middle" fill="#B91C1C">TIDAK</text>
+  </g>
+  <g font-family="Segoe UI,Arial,sans-serif" font-weight="700" text-anchor="middle">
+    <rect x="420" y="20" width="160" height="50" rx="12" fill="#2563EB"/><text x="500" y="51" fill="#fff" font-size="18">SAMPAH</text>
+    <rect x="380" y="110" width="240" height="58" rx="12" fill="#FACC15"/><text x="500" y="132" fill="#1E293B" font-size="15">Apakah mudah</text><text x="500" y="152" fill="#1E293B" font-size="15">terurai?</text>
+    <rect x="50" y="220" width="180" height="55" rx="12" fill="#16A34A"/><text x="140" y="253" fill="#fff" font-size="17">ORGANIK</text>
+    <rect x="560" y="220" width="220" height="58" rx="12" fill="#FACC15"/><text x="670" y="243" fill="#1E293B" font-size="15">Apakah</text><text x="670" y="263" fill="#1E293B" font-size="15">berbahaya?</text>
+    <rect x="420" y="330" width="160" height="55" rx="12" fill="#16A34A"/><text x="500" y="363" fill="#fff" font-size="17">B3</text>
+    <rect x="700" y="330" width="240" height="58" rx="12" fill="#FACC15"/><text x="820" y="352" fill="#1E293B" font-size="15">Dapat didaur</text><text x="820" y="372" fill="#1E293B" font-size="15">ulang?</text>
+    <rect x="560" y="440" width="200" height="55" rx="12" fill="#16A34A"/><text x="660" y="473" fill="#fff" font-size="17">ANORGANIK</text>
+    <rect x="800" y="440" width="180" height="55" rx="12" fill="#16A34A"/><text x="890" y="473" fill="#fff" font-size="17">RESIDU</text>
+  </g>
+</svg>
+</template>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+const VIDEO_IDS = { misi1: "", misi2: "", misi3: "" };
+const SUBMIT_ENDPOINT = "";
+
+const SECTIONS = [
+  {id:"sec-identitas", name:"Identitas", short:"Identitas", icon:"1"},
+  {id:"sec-pemanasan", name:"Pemanasan", short:"Pemanasan", icon:"2"},
+  {id:"sec-misi1", name:"Misi 1", short:"Misi 1", icon:"3"},
+  {id:"sec-misi2", name:"Misi 2", short:"Misi 2", icon:"4"},
+  {id:"sec-misi3", name:"Misi 3", short:"Misi 3", icon:"5"},
+  {id:"sec-refleksi", name:"Refleksi", short:"Refleksi", icon:"6"},
+];
+
+let state = { unlockedIndex:0, completed:[], submitted:false, submitTime:null };
+let isResetting = false;
+
+function hasStorage(){ try{ const k="__t"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } }
+const STORAGE_OK = hasStorage();
+const STORAGE_KEY = "lkpd1_tree_sampah_v1";
+
+function collectAnswers(){
+  const data = {text:{}, radio:{}, checkbox:{}};
+  
+  document.querySelectorAll('input[type=text], textarea').forEach(el=>{ 
+    if(el.id) data.text[el.id] = el.value; 
+  });
+  
+  document.querySelectorAll('input[type=radio]:checked').forEach(el=>{ 
+    if(el.name) data.radio[el.name] = el.value; 
+  });
+  
+  document.querySelectorAll('input[type=checkbox]').forEach(el=>{
+    const key = el.name || el.id;
+    if(!key) return;
+    if(!data.checkbox[key]) data.checkbox[key] = [];
+    if(el.checked) data.checkbox[key].push(el.value || el.id);
+  });
+  
+  return data;
+}
+
+function applyAnswers(data){
+  if(!data) return;
+  
+  Object.keys(data.text||{}).forEach(id=>{ 
+    const el = document.getElementById(id); 
+    if(el) el.value = data.text[id]; 
+  });
+  
+  Object.keys(data.radio||{}).forEach(name=>{
+    const val = data.radio[name];
+    const el = document.querySelector(`input[type=radio][name="${CSS.escape(name)}"][value="${CSS.escape(val)}"]`);
+    if(el) el.checked = true;
+  });
+  
+  Object.keys(data.checkbox||{}).forEach(key=>{
+    const vals = data.checkbox[key];
+    const els = document.querySelectorAll(`input[type=checkbox][name="${CSS.escape(key)}"], input[type=checkbox]#${CSS.escape(key)}`);
+    els.forEach(el=>{
+      if(vals.includes(el.value) || vals.includes(el.id)){
+        el.checked = true;
+      }
+    });
+  });
+}
+
+function saveState(){
+  if(!STORAGE_OK || isResetting) return;
+  try{
+    const payload = { state, answers: collectAnswers() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }catch(e){}
+}
+
+function loadState(){
+  if(!STORAGE_OK) return;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const payload = JSON.parse(raw);
+    if(payload.state) state = Object.assign(state, payload.state);
+    applyAnswers(payload.answers);
+  }catch(e){}
+}
+
+function updateCheckboxLimits(){
+  document.querySelectorAll('.field[data-type="checkbox"][data-count]').forEach(f=>{
+    const max = parseInt(f.dataset.count,10);
+    const boxes = [...f.querySelectorAll('input[type=checkbox]')];
+    const checkedCount = boxes.filter(x=>x.checked).length;
+    boxes.forEach(x=>{
+      if(!x.closest('section').classList.contains('locked')){
+        if(!x.checked) x.disabled = (checkedCount >= max);
+      }
+    });
+  });
+}
+
+function scrollToActiveProgress(){
+  if(state.unlockedIndex > 0){
+    const targetMeta = SECTIONS[state.unlockedIndex];
+    const targetEl = targetMeta ? document.getElementById(targetMeta.id) : document.getElementById('sec-submit');
+    if(targetEl){
+      setTimeout(()=> targetEl.scrollIntoView({behavior:'smooth', block:'start'}), 300);
+    }
+  }
+}
+
+function renderVideos(){
+  document.querySelectorAll('.video-box[data-video]').forEach(box=>{
+    const key = box.dataset.video;
+    const id = (VIDEO_IDS[key]||"").trim();
+    const title = box.dataset.videoTitle || "Video tata cara pengerjaan";
+    const frame = document.createElement('div');
+    frame.className = 'video-frame';
+    if(id){
+      frame.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}" title="${title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else {
+      frame.innerHTML = `<div class="video-placeholder">Video tata cara pengerjaan akan segera tersedia</div>`;
+    }
+    box.appendChild(frame);
+  });
+}
+
+function renderTrees(){
+  const tpl = document.getElementById('tree-svg-template');
+  document.querySelectorAll('[data-tree]').forEach(holder=>{
+    const clone = tpl.content.cloneNode(true);
+    holder.appendChild(clone);
+    const legend = document.createElement('div');
+    legend.className = 'legend';
+    legend.innerHTML = `<span><i style="background:#2563EB"></i>Biru = titik awal</span><span><i style="background:#FACC15"></i>Kuning = pertanyaan</span><span><i style="background:#16A34A"></i>Hijau = hasil akhir</span>`;
+    holder.appendChild(legend);
+  });
+}
+
+function validateSection(sectionEl){
+  const fields = sectionEl.querySelectorAll('.field');
+  let firstInvalid = null;
+  fields.forEach(f=>{
+    f.classList.remove('field-invalid');
+    if(f.dataset.skipIf){
+      const skipEl = document.getElementById(f.dataset.skipIf);
+      if(skipEl && skipEl.checked) return;
+    }
+    let invalid = false;
+    const type = f.dataset.type;
+    if(type === 'text'){
+      const input = f.querySelector('input[type=text], textarea');
+      invalid = !input || !input.value.trim();
+    } else if(type === 'radio'){
+      const name = f.dataset.name;
+      invalid = !document.querySelector(`input[type=radio][name="${CSS.escape(name)}"]:checked`);
+    } else if(type === 'checkbox'){
+      const name = f.dataset.name;
+      const checked = document.querySelectorAll(`input[type=checkbox][name="${CSS.escape(name)}"]:checked`).length;
+      if(f.dataset.count) invalid = checked !== parseInt(f.dataset.count,10);
+      else if(f.dataset.min) invalid = checked < parseInt(f.dataset.min,10);
+    }
+    if(invalid){
+      f.classList.add('field-invalid');
+      if(!firstInvalid) firstInvalid = f;
+    }
+  });
+  return firstInvalid;
+}
+
+document.addEventListener('input', e=>{
+  const f = e.target.closest('.field');
+  if(f) f.classList.remove('field-invalid');
+});
+document.addEventListener('change', e=>{
+  const f = e.target.closest('.field');
+  if(f) f.classList.remove('field-invalid');
+});
+
+document.querySelectorAll('.field[data-type="checkbox"][data-count]').forEach(f=>{
+  const max = parseInt(f.dataset.count,10);
+  const boxes = [...f.querySelectorAll('input[type=checkbox]')];
+  boxes.forEach(b=> b.addEventListener('change', ()=>{
+    const checkedCount = boxes.filter(x=>x.checked).length;
+    boxes.forEach(x=>{ if(!x.checked) x.disabled = (checkedCount>=max) && !x.closest('section').classList.contains('locked') ? true : x.disabled; if(!x.closest('section').classList.contains('locked')) x.disabled = checkedCount>=max && !x.checked; });
+    saveState();
+  }));
+});
+
+function applyLockState(){
+  SECTIONS.forEach((meta,i)=>{
+    const el = document.getElementById(meta.id);
+    const locked = i > state.unlockedIndex;
+    el.classList.toggle('locked', locked);
+    el.classList.toggle('completed', state.completed.includes(i));
+    el.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    el.querySelectorAll('input, textarea, button.btn-main').forEach(inp=>{
+      if(locked || state.submitted) inp.setAttribute('disabled','true');
+      else if(!inp.dataset.forceDisabled) inp.removeAttribute('disabled');
+    });
+  });
+  updateProgressBar();
+  updateSubmitSection();
+  updateCheckboxLimits();
+}
+
+function updateProgressBar(){
+  const list = document.getElementById('progressList');
+  list.innerHTML = '';
+  SECTIONS.forEach((meta,i)=>{
+    const li = document.createElement('li');
+    const done = state.completed.includes(i);
+    const current = !done && i===state.unlockedIndex;
+    if(done) li.classList.add('done');
+    if(current) li.classList.add('current');
+    li.innerHTML = `<span class="p-dot">${done?'&#10003;':(i>state.unlockedIndex?'&#128274;':meta.icon)}</span><span>${meta.short}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function updateSubmitSection(){
+  const submitCard = document.getElementById('sec-submit');
+  const allDone = state.completed.length >= SECTIONS.length;
+  submitCard.classList.toggle('locked', !allDone && !state.submitted);
+  const todo = document.getElementById('submitTodo');
+  todo.innerHTML = '';
+  if(!allDone){
+    SECTIONS.forEach((meta,i)=>{ if(!state.completed.includes(i)) { const li=document.createElement('li'); li.textContent = 'Selesaikan bagian: '+meta.name; todo.appendChild(li); } });
+  }
+  const btnSubmit = document.getElementById('btnSubmit');
+  btnSubmit.style.display = state.submitted ? 'none' : 'block';
+  document.getElementById('submitSuccess').style.display = state.submitted ? 'block' : 'none';
+  document.getElementById('submitHelp').style.display = allDone && !state.submitted ? 'none' : (state.submitted?'none':'block');
+}
+
+document.querySelectorAll('button[data-done]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const idx = parseInt(btn.dataset.done,10);
+    const sectionEl = document.getElementById(SECTIONS[idx].id);
+    const msg = sectionEl.querySelector('.friendly-msg');
+    const invalid = validateSection(sectionEl);
+    if(invalid){
+      msg.classList.add('show');
+      invalid.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    msg.classList.remove('show');
+    if(!state.completed.includes(idx)) state.completed.push(idx);
+    if(idx === state.unlockedIndex) state.unlockedIndex = idx+1;
+    saveState();
+    applyLockState();
+    const nextMeta = SECTIONS[idx+1];
+    const nextEl = nextMeta ? document.getElementById(nextMeta.id) : document.getElementById('sec-submit');
+    if(nextEl) setTimeout(()=> nextEl.scrollIntoView({behavior:'smooth', block:'start'}), 80);
+  });
+});
+
+document.addEventListener('input', ()=> saveState());
+document.addEventListener('change', ()=> saveState());
+
+window.addEventListener('beforeunload', saveState);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') saveState(); });
+
+document.getElementById('btnSubmit').addEventListener('click', ()=>{
+  if(state.completed.length < SECTIONS.length) return;
+  const ok = confirm('Yakin mau mengirim? Setelah dikirim jawaban tidak bisa diubah.');
+  if(!ok) return;
+  state.submitted = true;
+  state.submitTime = new Date();
+  saveState();
+  document.querySelectorAll('input, textarea').forEach(el=> el.setAttribute('disabled','true'));
+  document.querySelectorAll('button[data-done]').forEach(el=> el.setAttribute('disabled','true'));
+  applyLockState();
+
+  if(SUBMIT_ENDPOINT){
+    fetch(SUBMIT_ENDPOINT, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ jawaban: collectAnswers(), waktuKirim: state.submitTime })
+    }).catch(()=>{});
+  }
+});
+
+/* ====================== EKSPOR & IMPOR PROGRES (EKSTERNAL) ====================== */
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  saveState();
+  const rawData = localStorage.getItem(STORAGE_KEY);
+  if(!rawData){
+    alert('Belum ada progres jawaban yang bisa disimpan.');
+    return;
+  }
+  const namaSiswa = sanitizeFileName(document.getElementById('ident_nama1')?.value);
+  const kelasSiswa = sanitizeFileName(document.getElementById('ident_kelas')?.value);
+  const fileName = `Progres_LKPD1_${namaSiswa}_${kelasSiswa}.json`;
+
+  const blob = new Blob([rawData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('inputImport').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event)=>{
+    try{
+      const payload = JSON.parse(event.target.result);
+      if(payload && payload.state && payload.answers){
+        isResetting = true; // Matikan auto-save saat reload
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        alert('Progres berhasil dimuat! Halaman akan diperbarui.');
+        location.reload();
+      } else {
+        alert('Berkas progres tidak valid.');
+      }
+    } catch(err){
+      alert('Gagal membaca berkas progres.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+/* ====================== RESET PROGRES ====================== */
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  const ok = confirm('Mulai ulang akan menghapus semua jawaban yang tersimpan di perangkat ini. Lanjutkan?');
+  if(!ok) return;
+  
+  isResetting = true; // Matikan simpan otomatis sebelum reload
+  if(STORAGE_OK){ 
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){} 
+  }
+  
+  // Bersihkan nilai input di layar
+  document.querySelectorAll('input[type=text], textarea').forEach(el=> el.value = '');
+  document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(el=> el.checked = false);
+  
+  location.reload();
+});
+
+/* ====================== FUNGSI PENIAPKAN & EKSPOR PDF ====================== */
+
+function sanitizeFileName(s){
+  return (s || 'siswa')
+    .replace(/[^a-zA-Z0-9_-]+/g,'_')
+    .replace(/^_+|_+$/g,'') || 'siswa';
+}
+
+function replaceFormControlsWithAnswers(source, clone){
+  const sourceControls = [...source.querySelectorAll('input, textarea, select')];
+  const cloneControls  = [...clone.querySelectorAll('input, textarea, select')];
+
+  sourceControls.forEach((src, i)=>{
+    const dst = cloneControls[i];
+    if(!dst) return;
+
+    let answer = '';
+    let isChoice = false;
+    let checked = false;
+
+    if(src.type === 'radio' || src.type === 'checkbox'){
+      isChoice = true;
+      checked = src.checked;
+      
+      answer = checked ? '[✓]' : '[  ]';
+
+      const parentLabel = dst.closest('label');
+      if(parentLabel){
+        if(checked){
+          parentLabel.style.cssText += ';background-color:#EFF6FF !important;border-color:#2563EB !important;font-weight:700 !important;color:#1E40AF !important;';
+        } else {
+          parentLabel.style.cssText += ';opacity:0.6 !important;';
+        }
+      }
+    }else if(src.tagName === 'TEXTAREA'){
+      answer = src.value.trim() || '(belum diisi)';
+    }else if(src.tagName === 'SELECT'){
+      const option = src.options[src.selectedIndex];
+      answer = option && option.value ? option.textContent.trim() : '(belum diisi)';
+    }else{
+      answer = src.value.trim() || '(belum diisi)';
+    }
+
+    const span = document.createElement('span');
+    span.className = isChoice ? 'pdf-choice-mark' : 'pdf-answer';
+    span.textContent = answer;
+
+    if(isChoice){
+      span.style.cssText = [
+        'display:inline-block',
+        'min-width:1.4em',
+        'font-weight:700',
+        'font-size:0.95em',
+        'color:' + (checked ? '#2563EB' : '#94A3B8')
+      ].join(';');
+    }else{
+      span.style.cssText = [
+        'display:block',
+        'box-sizing:border-box',
+        'width:100%',
+        'min-height:34px',
+        'padding:6px 9px',
+        'margin:4px 0',
+        'border:1px solid #CBD5E1',
+        'border-radius:6px',
+        'background:#FFFFFF',
+        'color:#0F172A',
+        'white-space:pre-wrap',
+        'overflow-wrap:anywhere',
+        'font:inherit',
+        'font-size:0.95rem'
+      ].join(';');
+    }
+
+    dst.replaceWith(span);
+  });
+}
+
+function preparePdfClone(){
+  const mainSource = document.querySelector('main.wrap');
+  if(!mainSource) throw new Error('Elemen main.wrap tidak ditemukan.');
+
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = '';
+
+  const pdfRoot = document.createElement('div');
+  pdfRoot.className = 'pdf-export-root pdf-mode';
+
+  const headerSource = document.querySelector('header.top');
+  if(headerSource){
+    pdfRoot.appendChild(headerSource.cloneNode(true));
+  }
+
+  const mainClone = mainSource.cloneNode(true);
+  pdfRoot.appendChild(mainClone);
+
+  mainClone.querySelector('#sec-submit')?.remove();
+  mainClone.querySelectorAll('button, .btn, .reset-btn').forEach(el=>el.remove());
+  mainClone.querySelectorAll('iframe').forEach(el=>el.remove());
+
+  replaceFormControlsWithAnswers(mainSource, mainClone);
+
+  pdfRoot.style.cssText = [
+    'width:720px',
+    'box-sizing:border-box',
+    'background:#FFFFFF',
+    'color:#1E293B',
+    'padding:12px',
+    'margin:0'
+  ].join(';');
+
+  printArea.appendChild(pdfRoot);
+
+  printArea.style.display = 'block';
+  printArea.style.position = 'fixed';
+  printArea.style.left = '0';
+  printArea.style.top = '0';
+  printArea.style.width = '720px';
+  printArea.style.height = 'auto';
+  printArea.style.background = '#FFFFFF';
+  printArea.style.zIndex = '99999';
+  printArea.style.visibility = 'visible';
+  printArea.style.pointerEvents = 'none';
+
+  return { printArea, pdfRoot };
+}
+
+async function waitForPdfRender(root){
+  if(document.fonts && document.fonts.ready){
+    try{ await document.fonts.ready; }catch(e){}
+  }
+
+  const images = [...root.querySelectorAll('img')];
+  await Promise.all(images.map(img=>{
+    if(img.complete) return Promise.resolve();
+    return new Promise(resolve=>{
+      img.addEventListener('load', resolve, {once:true});
+      img.addEventListener('error', resolve, {once:true});
+    });
+  }));
+
+  await new Promise(resolve => requestAnimationFrame(()=>resolve()));
+}
+
+function cleanupPdfArea(){
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = '';
+  printArea.removeAttribute('style');
+}
+
+async function downloadPdfNow(){
+  let prepared = null;
+
+  try{
+    prepared = preparePdfClone();
+    await waitForPdfRender(prepared.pdfRoot);
+
+    const fileName =
+      `LKPD1_${sanitizeFileName(document.getElementById('ident_nama1')?.value)}_` +
+      `${sanitizeFileName(document.getElementById('ident_kelas')?.value)}.pdf`;
+
+    if(typeof html2pdf === 'undefined'){
+      fallbackPrint();
+      return;
+    }
+
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: fileName,
+      image: {
+        type: 'jpeg',
+        quality: 0.98
+      },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#FFFFFF',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 720
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: {
+        mode: ['css', 'legacy']
+      }
+    };
+
+    await html2pdf()
+      .set(opt)
+      .from(prepared.pdfRoot)
+      .save();
+
+  }catch(err){
+    console.error('Gagal membuat PDF:', err);
+    fallbackPrint();
+  }finally{
+    setTimeout(cleanupPdfArea, 300);
+  }
+}
+
+const btnDownloadPdf = document.getElementById('btnDownloadPdf');
+if (btnDownloadPdf) {
+  btnDownloadPdf.addEventListener('click', downloadPdfNow);
+}
+
+function fallbackPrint(){
+  document.body.classList.add('printing');
+  window.print();
+  setTimeout(()=>{
+    document.body.classList.remove('printing');
+    cleanupPdfArea();
+  }, 700);
+}
+
+renderVideos();
+renderTrees();
+loadState();
+applyLockState();
+scrollToActiveProgress();
+
+if(state.submitted){
+  document.querySelectorAll('input, textarea').forEach(el=> el.setAttribute('disabled','true'));
+  document.querySelectorAll('button[data-done]').forEach(el=> el.setAttribute('disabled','true'));
+}
+
+})();
+</script>
+</body>
+</html>
