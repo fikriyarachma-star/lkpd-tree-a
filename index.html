@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-<title>LKPD 1 - Ikuti Jalan Tree untuk Memilah Sampah</title>
+<title>LKPD A - Decision Tree</title>
 <style>
   :root{
     --c-pemanasan:#F97316; --c-pemanasan-bg:#FFF3E8;
@@ -22,23 +22,102 @@
   h1,h2,h3{line-height:1.25;margin:0 0 8px;}
   img,svg{max-width:100%;}
   .wrap{max-width:820px;margin:0 auto;padding:12px 14px 60px;}
-  header.top{background:#0F172A;color:#fff;padding:20px 16px 16px;text-align:center;}
-  header.top h1{font-size:1.35rem;margin-bottom:4px;}
-  header.top p{margin:0;color:#CBD5E1;font-size:1rem;}
-  header.top .meta{font-size:.85rem;color:#94A3B8;margin-top:6px;}
+
+  /* ---- HEADER UTAMA (TIDAK STICKY / IKUT SCROLL) ---- */
+  header.main-header{
+    background:#0F172A;
+    color:#fff;
+    padding:18px 16px 12px;
+    text-align:center;
+  }
+  header.main-header h1{font-size:1.25rem;margin-bottom:2px;}
+  header.main-header p{margin:0;color:#CBD5E1;font-size:.92rem;}
+  header.main-header .meta{font-size:.8rem;color:#94A3B8;margin-top:4px;}
+
+  /* ---- STICKY HEADER & NAVBAR ---- */
+  .sticky-header-container{
+    position:sticky;
+    top:0;
+    z-index:100;
+    background:#0F172A;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+
+  .header-actions-bar{
+    padding:10px 16px;
+    background:#0F172A;
+  }
+
+  /* Header action buttons */
+  .header-actions{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    margin-top:0;
+  }
+  .header-btn{
+    background:#1E293B;
+    border:1px solid #475569;
+    color:#F8FAFC;
+    border-radius:8px;
+    padding:6px 12px;
+    font-size:.82rem;
+    font-weight:600;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    user-select:none;
+    transition:background 0.2s, border-color 0.2s;
+  }
+  .header-btn:hover{
+    background:#334155;
+    border-color:#64748B;
+  }
+  .header-btn-primary{
+    background:#2563EB;
+    border-color:#3B82F6;
+    color:#FFFFFF;
+  }
+  .header-btn-primary:hover{
+    background:#1D4ED8;
+  }
+  .header-btn-danger{
+    background:#7F1D1D;
+    border-color:#991B1B;
+    color:#FEE2E2;
+  }
+  .header-btn-danger:hover{
+    background:#991B1B;
+  }
 
   /* ---- progress bar ---- */
-  .progress-bar{position:sticky;top:0;z-index:50;background:#0F172A;padding:10px 8px;overflow-x:auto;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .progress-bar{
+    background:#0F172A;
+    padding:8px 8px 10px;
+    overflow-x:auto;
+    white-space:nowrap;
+    border-top:1px solid #1E293B;
+  }
   .progress-bar::-webkit-scrollbar{height:4px;}
   .progress-list{display:flex;gap:6px;list-style:none;margin:0;padding:0 6px;min-width:max-content;}
   .progress-list li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.68rem;color:#94A3B8;width:78px;text-align:center;}
-  .p-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;background:#334155;color:#fff;border:2px solid #475569;}
+  .p-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;background:#334155;color:#fff;border:2px solid #475569;}
   .progress-list li.done .p-dot{background:var(--c-ok);border-color:var(--c-ok);}
   .progress-list li.current .p-dot{background:#fff;color:#0F172A;border-color:#fff;}
   .progress-list li.done, .progress-list li.current{color:#fff;}
 
   /* ---- section cards ---- */
-  section.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);margin:16px 0;padding:18px 16px;border-top:6px solid var(--sect-color,#94A3B8);scroll-margin-top:70px;}
+  section.card{
+    background:#fff;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    margin:16px 0;
+    padding:18px 16px;
+    border-top:6px solid var(--sect-color,#94A3B8);
+    scroll-margin-top:95px;
+  }
   section.card.locked{padding:22px 16px;background:#F1F5F9;border-top-color:#CBD5E1;}
   .lock-view{display:flex;align-items:center;gap:12px;color:var(--c-muted);}
   .lock-view .ico{font-size:1.6rem;}
@@ -95,13 +174,9 @@
   .btn-main{background:var(--sect-color,#2563EB);color:#fff;}
   .btn-main:active{filter:brightness(.92);}
   .btn-ghost{background:#fff;border:2px solid var(--c-border);color:var(--c-text);}
-  .btn-small{width:auto;padding:8px 14px;font-size:.85rem;min-height:36px;}
   .friendly-msg{display:none;background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;border-radius:10px;padding:10px 12px;margin-top:10px;font-weight:600;}
   .friendly-msg.show{display:block;}
 
-  footer.util{max-width:820px;margin:0 auto;padding:8px 14px 40px;text-align:center;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
-  .reset-btn{background:none;border:1px solid var(--c-border);color:var(--c-muted);border-radius:10px;padding:8px 14px;font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;user-select:none;}
-  .reset-btn:hover{background:#F1F5F9;}
   .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;margin-top:8px;color:var(--c-muted);}
   .legend span{display:inline-flex;align-items:center;gap:5px;}
   .legend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
@@ -124,6 +199,7 @@
   .pdf-export-root .card{page-break-inside:auto !important;break-inside:auto !important;}
   .pdf-export-root .section-body{display:block !important;}
   .pdf-export-root .friendly-msg{display:none !important;}
+  .pdf-export-root .header-actions{display:none !important;}
 
   @media print{
     body.printing *{visibility:hidden;}
@@ -135,15 +211,29 @@
 </head>
 <body>
 
-<header class="top">
+<!-- HEADER UTAMA (TIDAK STICKY / IKUT SCROLL) -->
+<header class="main-header">
   <h1>LEMBAR KERJA PESERTA DIDIK</h1>
   <p>Ikuti Jalan Tree untuk Memilah Sampah</p>
   <p class="meta">Materi: Struktur Data Tree &middot; Konteks: Pengelompokan Sampah &middot; LKPD A</p>
 </header>
 
-<nav class="progress-bar" aria-label="Peta kemajuan LKPD">
-  <ul class="progress-list" id="progressList"></ul>
-</nav>
+<!-- WADAH HEADER STICKY (TETAP TERLIHAT SAAT SCROLL) -->
+<div class="sticky-header-container">
+  <div class="header-actions-bar">
+    <!-- TOMBOL AKSES CEPAT (SIMPAN, UNGGAH, MULAI ULANG) -->
+    <div class="header-actions">
+      <button class="header-btn header-btn-primary" id="btnExport">&#128190; Simpan Progres (File)</button>
+      <label class="header-btn" for="inputImport">&#128194; Muat Progres (File)</label>
+      <input type="file" id="inputImport" accept=".json" style="display:none;">
+      <button class="header-btn header-btn-danger" id="btnReset">&#8634; Mulai Ulang</button>
+    </div>
+  </div>
+
+  <nav class="progress-bar" aria-label="Peta kemajuan LKPD">
+    <ul class="progress-list" id="progressList"></ul>
+  </nav>
+</div>
 
 <main class="wrap">
 
@@ -583,13 +673,6 @@
 
 </main>
 
-<footer class="util">
-  <button class="reset-btn" id="btnReset">Mulai ulang</button>
-  <button class="reset-btn" id="btnExport" style="background:#2563EB;color:#fff;border-color:#2563EB;">&#128190; Simpan Progres (File)</button>
-  <label class="reset-btn" for="inputImport" style="cursor:pointer;">&#128194; Muat Progres (File)</label>
-  <input type="file" id="inputImport" accept=".json" style="display:none;">
-</footer>
-
 <!-- Area khusus cetak / ekspor PDF (terisolasi) -->
 <div id="print-area"></div>
 
@@ -633,7 +716,7 @@
 (function(){
 "use strict";
 
-const VIDEO_IDS = { misi1: "", misi2: "", misi3: "" };
+const VIDEO_IDS = { misi1: "Q1QQMX1CZCQ", misi2: "hwA6tRd7p2g", misi3: "u2UVPtkYUjg" };
 const SUBMIT_ENDPOINT = "";
 
 const SECTIONS = [
@@ -943,7 +1026,7 @@ document.getElementById('inputImport').addEventListener('change', (e)=>{
     try{
       const payload = JSON.parse(event.target.result);
       if(payload && payload.state && payload.answers){
-        isResetting = true; // Matikan auto-save saat reload
+        isResetting = true;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         alert('Progres berhasil dimuat! Halaman akan diperbarui.');
         location.reload();
@@ -964,12 +1047,11 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   const ok = confirm('Mulai ulang akan menghapus semua jawaban yang tersimpan di perangkat ini. Lanjutkan?');
   if(!ok) return;
   
-  isResetting = true; // Matikan simpan otomatis sebelum reload
+  isResetting = true;
   if(STORAGE_OK){ 
     try{ localStorage.removeItem(STORAGE_KEY); }catch(e){} 
   }
   
-  // Bersihkan nilai input di layar
   document.querySelectorAll('input[type=text], textarea').forEach(el=> el.value = '');
   document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(el=> el.checked = false);
   
@@ -1064,9 +1146,10 @@ function preparePdfClone(){
   const pdfRoot = document.createElement('div');
   pdfRoot.className = 'pdf-export-root pdf-mode';
 
-  const headerSource = document.querySelector('header.top');
+  const headerSource = document.querySelector('header.main-header');
   if(headerSource){
-    pdfRoot.appendChild(headerSource.cloneNode(true));
+    const headerClone = headerSource.cloneNode(true);
+    pdfRoot.appendChild(headerClone);
   }
 
   const mainClone = mainSource.cloneNode(true);
